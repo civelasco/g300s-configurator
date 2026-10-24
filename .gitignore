@@ -1,0 +1,12 @@
+# build output
+build/
+
+# Python
+__pycache__/
+*.pyc
+
+# personal mouse backups - keep them out of the repo
+original-settings.json
+*-backup.json
+
+.DS_Store

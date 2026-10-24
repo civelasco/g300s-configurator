@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>G300s</title>
+<style>
+  :root {
+    --bg: #f3f3f5; --card: #ffffff; --text: #1b1b1f; --muted: #6c6c76; --line: #e3e3e8;
+    --accent: #0a7cff; --accent-soft: #e6f1ff; --on-accent: #ffffff;
+    --ok: #1f9d55; --bad: #d64545; --bad-soft: #fdecec; --mouse: #2a2a2e; --mouse-btn: #3a3a40;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141416; --card: #1f1f23; --text: #ececf1; --muted: #9b9ba6; --line: #303037;
+      --accent: #3d9bff; --accent-soft: #1b2a3d; --ok: #3cc47c; --bad: #ff6b6b; --bad-soft: #3a1f22;
+      --mouse: #0c0c0e; --mouse-btn: #26262b; color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  main { max-width: 940px; margin: 0 auto; padding: 20px 16px 120px; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  select { font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+
+  /* header */
+  header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  header h1 { font-size: 22px; margin: 0; flex: 1; letter-spacing: -.01em; }
+  .status { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); }
+  .status.on::before { background: var(--ok); }
+  details.menu { position: relative; }
+  details.menu summary { list-style: none; cursor: pointer; border: 1px solid var(--line); background: var(--card);
+                         border-radius: 8px; padding: 4px 10px; font-size: 18px; line-height: 1; }
+  details.menu summary::-webkit-details-marker { display: none; }
+  details.menu .items { position: absolute; right: 0; top: calc(100% + 6px); background: var(--card); border: 1px solid var(--line);
+                        border-radius: 10px; padding: 6px; min-width: 220px; z-index: 5; box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+  details.menu .items button { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 8px 10px; border-radius: 6px; }
+  details.menu .items button:hover { background: var(--accent-soft); }
+
+  /* profiles */
+  .profiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .prof { display: flex; align-items: center; gap: 10px; text-align: left; padding: 12px; border-radius: 12px;
+          border: 1px solid var(--line); background: var(--card); }
+  .prof.sel { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .prof .led { width: 14px; height: 14px; border-radius: 50%; flex: none; border: 1px solid rgba(128,128,128,.4); }
+  .prof b { display: block; font-weight: 600; }
+  .prof small { color: var(--muted); font-size: 12px; }
+  .prof small.live { color: var(--ok); font-weight: 600; }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-bottom: 14px; }
+  .card h2 { font-size: 16px; margin: 0 0 4px; }
+  .card .sub { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .banner { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-radius: 12px; padding: 12px 14px; margin-bottom: 14px;
+            background: var(--accent-soft); }
+  .banner.bad { background: var(--bad-soft); }
+  .banner p { margin: 0; flex: 1; min-width: 200px; }
+  .pill-btn { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 6px 14px; }
+  .pill-btn:hover { border-color: var(--accent); }
+  .pill-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; }
+
+  /* buttons section */
+  .layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 22px; align-items: start; }
+  .mouse-wrap { position: sticky; top: 16px; text-align: center; }
+  .mouse-wrap svg { width: 100%; max-width: 230px; height: auto; }
+  .mouse-wrap .hint { color: var(--muted); font-size: 12px; margin-top: 6px; }
+  svg .body { fill: var(--mouse); }
+  svg .hot { fill: var(--mouse-btn); stroke: #55555c; stroke-width: 1; cursor: pointer; transition: fill .15s; }
+  svg .hot:hover { fill: #4a4a52; }
+  svg .hot.sel { fill: var(--accent); stroke: var(--accent); }
+  svg .hot.flash { fill: var(--ok); stroke: var(--ok); }
+  svg .num { fill: #d8d8de; font: 600 11px -apple-system, sans-serif; pointer-events: none; text-anchor: middle; dominant-baseline: central; }
+  svg .hot.sel + .num, svg .hot.flash + .num { fill: #fff; }
+  svg .glow { stroke: var(--led, #888); stroke-width: 3; }
+
+  .blist { display: flex; flex-direction: column; gap: 6px; }
+  .brow { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 10px; align-items: center; width: 100%;
+          text-align: left; border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 9px 12px; }
+  .brow:hover { border-color: var(--accent); }
+  .brow.sel { border-color: var(--accent); background: var(--accent-soft); }
+  .brow.flash { border-color: var(--ok); }
+  .badge { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700;
+           background: var(--bg); border: 1px solid var(--line); }
+  .brow.sel .badge { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  .brow .where { font-size: 12px; color: var(--muted); display: block; }
+  .brow .what { font-weight: 600; }
+  .brow .chev { color: var(--muted); }
+
+  .picker { border: 1px solid var(--accent); border-radius: 12px; padding: 14px; margin: 2px 0 8px; background: var(--card); }
+  .picker h3 { margin: 0 0 10px; font-size: 14px; }
+  .group { margin-bottom: 10px; }
+  .group .gl { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 6px; }
+  .tiles { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tile { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 7px 11px; font-size: 14px; }
+  .tile:hover { border-color: var(--accent); }
+  .tile.sel { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .rec { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+  .keycap { min-width: 140px; padding: 8px 12px; border-radius: 8px; border: 2px dashed var(--line); font-size: 16px; font-weight: 600; text-align: center; }
+  .keycap.live { border-color: var(--accent); color: var(--accent); }
+  .linkish { border: 0; background: none; color: var(--accent); padding: 0; font-size: 13px; }
+
+  /* speed + light */
+  .two { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 14px; }
+  .speeds { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .speed { border: 1px solid var(--line); border-radius: 10px; padding: 8px; text-align: center; }
+  .speed.def { border-color: var(--accent); background: var(--accent-soft); }
+  .speed select { width: 100%; margin: 4px 0; text-align: center; }
+  .speed .star { border: 0; background: none; font-size: 12px; color: var(--muted); padding: 2px; }
+  .speed.def .star { color: var(--accent); font-weight: 600; }
+  .speed .lvl { font-size: 11px; color: var(--muted); }
+  .swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+  .sw { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--line); padding: 0; }
+  .sw.sel { outline: 3px solid var(--accent); outline-offset: 2px; }
+  details.adv { margin-top: 14px; font-size: 13px; color: var(--muted); }
+  details.adv summary { cursor: pointer; }
+  details.adv .rates { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+
+  /* save bar */
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+         background: var(--card); border-top: 1px solid var(--line); box-shadow: 0 -6px 20px rgba(0,0,0,.08); }
+  .bar .in { max-width: 940px; margin: 0 auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .bar .msg { flex: 1; min-width: 180px; }
+  .toast { position: fixed; left: 50%; bottom: 88px; transform: translateX(-50%); background: var(--text); color: var(--bg);
+           padding: 10px 16px; border-radius: 10px; font-size: 14px; max-width: calc(100% - 32px); z-index: 10; }
+  .toast.bad { background: var(--bad); color: #fff; }
+
+  .center { text-align: center; padding: 40px 16px; }
+  .center pre { white-space: pre-wrap; text-align: left; font: 12px ui-monospace, Menlo, monospace; color: var(--muted);
+                background: var(--bg); padding: 10px; border-radius: 8px; }
+
+  @media (max-width: 760px) {
+    .layout, .two { grid-template-columns: 1fr; }
+    .mouse-wrap { position: static; }
+    .mouse-wrap svg { max-width: 170px; }
+  }
+  @media (max-width: 480px) {
+    .profiles { grid-template-columns: 1fr; }
+    .speeds { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>G300s</h1>
+    <span class="status" id="status">Connecting…</span>
+    <details class="menu" id="menu">
+      <summary aria-label="More">⋯</summary>
+      <div class="items">
+        <button id="m-backup">Save a backup file…</button>
+        <button id="m-restore">Load a backup file…</button>
+        <button id="m-reconnect">Reconnect to mouse</button>
+      </div>
+    </details>
+    <input type="file" id="restore-file" accept=".json,application/json" hidden>
+  </header>
+
+  <section class="card center" id="offline" hidden>
+    <h2>Can't reach your mouse</h2>
+    <p class="sub">Make sure it's plugged in. Otherwise, macOS needs to let this app see the mouse:<br>
+      open <b>System Settings → Privacy &amp; Security → Input Monitoring</b>, turn on <b>G300s Configurator</b>,<br>
+      then quit and reopen the app.</p>
+    <div class="tiles" style="justify-content:center;margin-bottom:12px">
+      <button class="pill-btn primary" id="open-settings" hidden>1. Open Input Monitoring settings</button>
+      <button class="pill-btn primary" id="relaunch" hidden>2. Reopen the app</button>
+      <button class="pill-btn" id="retry">Try again</button>
+    </div>
+    <p class="sub" id="settings-hint" hidden>In Settings, switch <b>G300s Configurator</b> on. If it's already on, select it,
+      remove it with <b>−</b>, add it back with <b>+</b> (from Applications), then reopen the app.</p>
+    <details class="adv"><summary>Details</summary><pre id="offline-detail"></pre></details>
+  </section>
+
+  <div id="app" hidden>
+    <div class="profiles" id="profiles"></div>
+    <div id="banners"></div>
+
+    <section class="card">
+      <h2>Buttons</h2>
+      <p class="sub">Pick a button in the picture or the list, then choose what it does.</p>
+      <div class="layout">
+        <div class="mouse-wrap">
+          <svg viewBox="0 0 240 330" id="mouse" aria-label="Mouse diagram"></svg>
+          <div class="hint">Tip: press a button on your mouse to find it here.</div>
+        </div>
+        <div class="blist" id="blist"></div>
+      </div>
+    </section>
+
+    <div class="two">
+      <section class="card">
+        <h2>Pointer speed</h2>
+        <p class="sub">The speed buttons step through these four. ★ is where the profile starts.</p>
+        <div class="speeds" id="speeds"></div>
+        <details class="adv">
+          <summary>Advanced</summary>
+          <div style="margin-top:8px">Report rate (how often the mouse updates):</div>
+          <div class="rates" id="rates"></div>
+        </details>
+      </section>
+      <section class="card">
+        <h2>Light colour</h2>
+        <p class="sub">Shows which profile is on.</p>
+        <div class="swatches" id="colors"></div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<div class="bar" id="bar" hidden><div class="in">
+  <span class="msg" id="bar-msg"></span>
+  <button class="pill-btn" id="discard">Undo changes</button>
+  <button class="pill-btn primary" id="save">Save to mouse</button>
+</div></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
+const clone = (x) => JSON.parse(JSON.stringify(x));
+
+const COLOR_CSS = { off: "#3a3a3a", red: "#e53935", green: "#43a047", blue: "#1e88e5",
+  yellow: "#fdd835", cyan: "#00bcd4", magenta: "#d81b60", white: "#f5f5f5" };
+const COLOR_NAMES = { off: "Off", red: "Red", green: "Green", blue: "Blue", yellow: "Yellow", cyan: "Cyan", magenta: "Pink", white: "White" };
+
+// Physical positions from Logitech's G300s setup guide (front of the mouse at the top).
+const BUTTONS = [
+  "Main left button", "Main right button", "Scroll wheel (press it down)",
+  "Left edge, rear", "Left edge, front", "Right edge, rear", "Right edge, front",
+  "Behind the wheel, rear", "Behind the wheel, front",
+];
+const SHAPES = [
+  `<path class="hot" d="M115 24 C 82 26 58 42 55 92 L 56 150 L 115 150 Z"/><text class="num" x="86" y="100">1</text>`,
+  `<path class="hot" d="M125 24 C 158 26 182 42 185 92 L 184 150 L 125 150 Z"/><text class="num" x="154" y="100">2</text>`,
+  `<rect class="hot" x="110" y="44" width="20" height="40" rx="10"/><text class="num" x="120" y="64">3</text>`,
+  `<rect class="hot" x="34" y="100" width="14" height="30" rx="6"/><text class="num" x="41" y="115">4</text>`,
+  `<rect class="hot" x="36" y="66" width="14" height="30" rx="6"/><text class="num" x="43" y="81">5</text>`,
+  `<rect class="hot" x="192" y="100" width="14" height="30" rx="6"/><text class="num" x="199" y="115">6</text>`,
+  `<rect class="hot" x="190" y="66" width="14" height="30" rx="6"/><text class="num" x="197" y="81">7</text>`,
+  `<rect class="hot" x="110" y="114" width="20" height="18" rx="5"/><text class="num" x="120" y="123">8</text>`,
+  `<rect class="hot" x="110" y="91" width="20" height="18" rx="5"/><text class="num" x="120" y="100">9</text>`,
+];
+
+const ACTIONS = [
+  { group: "Clicks", items: [["left", "Left click"], ["right", "Right click"], ["middle", "Middle click"], ["back", "Back"], ["forward", "Forward"]] },
+  { group: "Pointer speed", items: [["dpi-up", "Speed up"], ["dpi-down", "Slow down"], ["dpi-cycle", "Cycle speeds"],
+                                   ["dpi-shift", "Precision (while held)"], ["dpi-default", "Back to ★ speed"]] },
+  { group: "Shortcuts", items: [["key:cmd+c", "Copy ⌘C"], ["key:cmd+v", "Paste ⌘V"], ["key:cmd+x", "Cut ⌘X"], ["key:cmd+z", "Undo ⌘Z"],
+                               ["key:cmd+tab", "Switch app ⌘⇥"], ["key:ctrl+up", "Mission Control"], ["key:shift+cmd+4", "Screenshot"]] },
+  { group: "Other", items: [["profile-cycle", "Next profile"], ["disabled", "Do nothing"]] },
+];
+const LABEL = Object.fromEntries(ACTIONS.flatMap((g) => g.items));
+Object.assign(LABEL, { button6: "Mouse button 6", button7: "Mouse button 7", button8: "Mouse button 8", button9: "Mouse button 9" });
+
+const STD = ["left", "right", "middle", "back", "forward"];
+const PRESETS = [
+  { name: "Everyday", desc: "Clicks, back/forward, speed buttons",
+    p: { color: "blue", rate: 500, dpis: [500, 1000, 1500, 2000], default_dpi: 1,
+         buttons: [...STD, "dpi-up", "dpi-down", "dpi-cycle", "profile-cycle"] } },
+  { name: "Copy & paste", desc: "Logitech's Productivity setup, with Mac shortcuts",
+    p: { color: "blue", rate: 500, dpis: [500, 1000, 1500, 2500], default_dpi: 1,
+         buttons: [...STD, "key:cmd+c", "key:cmd+v", "profile-cycle", "key:cmd+x"] } },
+  { name: "Shooter games", desc: "Logitech's FPS setup",
+    p: { color: "white", rate: 1000, dpis: [500, 1000, 1500, 2500], default_dpi: 1,
+         buttons: [...STD, "dpi-down", "dpi-up", "profile-cycle", "dpi-shift"] } },
+  { name: "MMO games", desc: "Logitech's MMO setup",
+    p: { color: "cyan", rate: 500, dpis: [500, 1000, 1500, 2500], default_dpi: 1,
+         buttons: [...STD, "key:ctrl", "key:alt", "profile-cycle", "dpi-cycle"] } },
+];
+
+let meta, saved, edits, active = 0, current = 0, picking = null, recording = false, backupData = null, saving = false;
+
+// ---------------------------------------------------------------- helpers
+async function api(path, body) {
+  const opt = body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
+  const r = await fetch(path, opt);
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || r.statusText);
+  return data;
+}
+let toastTimer;
+function toast(text, bad) {
+  const t = $("toast"); t.textContent = text; t.className = "toast" + (bad ? " bad" : ""); t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), bad ? 6000 : 3000);
+}
+const SYM = { cmd: "⌘", shift: "⇧", alt: "⌥", ctrl: "⌃", rcmd: "right ⌘", rshift: "right ⇧", ralt: "right ⌥", rctrl: "right ⌃" };
+const KEYSYM = { enter: "↩", esc: "esc", backspace: "⌫", tab: "⇥", space: "Space", up: "↑", down: "↓", left: "←", right: "→",
+  delete: "⌦", minus: "-", equal: "=", leftbracket: "[", rightbracket: "]", backslash: "\\", semicolon: ";", quote: "'",
+  grave: "`", comma: ",", period: ".", slash: "/", pageup: "Page Up", pagedown: "Page Down" };
+function prettyKey(combo) {
+  const parts = combo.split("+").filter(Boolean);
+  return parts.map((p) => SYM[p] || KEYSYM[p] || (p.length === 1 ? p.toUpperCase() : p.toUpperCase().replace("_", " "))).join("");
+}
+function describe(action) {
+  if (LABEL[action]) return LABEL[action];
+  if (action.startsWith("key:")) return action === "key:" ? "Keyboard shortcut (not set)" : "Types " + prettyKey(action.slice(4));
+  return action;
+}
+const isBlank = (p) => p.dpis.every((d) => !d);
+const dirty = () => edits.map((p, i) => (JSON.stringify(p) !== JSON.stringify(saved[i]) ? i : -1)).filter((i) => i >= 0);
+
+// ---------------------------------------------------------------- loading
+async function load(reconnect) {
+  const s = await api("/api/state" + (reconnect ? "?reconnect=1" : ""));
+  $("status").classList.toggle("on", s.connected);
+  $("status").textContent = s.connected ? (s.demo ? "Simulated mouse" : "Connected") : "Not connected";
+  $("offline").hidden = s.connected; $("app").hidden = !s.connected;
+  if (!s.connected) { $("offline-detail").textContent = s.error; $("bar").hidden = true; return; }
+  saved = s.profiles; edits = clone(saved); active = s.active; current = s.active; backupData = s.backup;
+  picking = null; render();
+}
+
+// ---------------------------------------------------------------- render
+function render() {
+  const p = edits[current];
+  const d = dirty();
+
+  // profile chips
+  const box = $("profiles"); box.innerHTML = "";
+  edits.forEach((ep, i) => {
+    const chip = el("button", { className: "prof" + (i === current ? " sel" : "") },
+      el("span", { className: "led", style: `background:${isBlank(ep) ? "transparent" : COLOR_CSS[ep.color]}` }),
+      el("span", {}, el("b", { textContent: `Profile ${i + 1}${d.includes(i) ? " •" : ""}` }),
+        el("small", { className: i === active ? "live" : "", textContent: i === active ? "In use now" : isBlank(ep) ? "Empty" : "Not in use" })));
+    chip.onclick = () => { stopRecording(); current = i; picking = null; render(); };
+    box.append(chip);
+  });
+
+  // banners
+  const banners = $("banners"); banners.innerHTML = "";
+  if (isBlank(p)) {
+    const b = el("div", { className: "banner" }, el("p", { innerHTML: `<b>This profile is empty.</b> Pick a starting point:` }));
+    PRESETS.forEach((pr) => b.append(el("button", { className: "pill-btn", textContent: pr.name, title: pr.desc, onclick: () => applyPreset(pr) })));
+    banners.append(b);
+  } else {
+    if (!p.buttons.includes("left")) banners.append(el("div", { className: "banner bad" },
+      el("p", { innerHTML: "<b>No button does Left click</b> in this profile. You probably want button 1 set to Left click." })));
+    const empty = edits.map((ep, i) => (isBlank(ep) ? i + 1 : 0)).filter(Boolean);
+    if (p.buttons.includes("profile-cycle") && empty.length) banners.append(el("div", { className: "banner bad" },
+      el("p", { innerHTML: `<b>"Next profile" will switch to an empty profile</b> (Profile ${empty.join(" and ")}), where no buttons work. Set those up first, or pick another action.` })));
+    if (current !== active) banners.append(el("div", { className: "banner" },
+      el("p", { textContent: `Your mouse is using Profile ${active + 1}. You can still edit this one.` }),
+      el("button", { className: "pill-btn", textContent: `Use Profile ${current + 1} now`, onclick: useNow })));
+    const pre = el("details", { className: "adv", style: "margin:-4px 0 12px" }, el("summary", { textContent: "Start over from a preset…" }));
+    const row = el("div", { className: "rates" });
+    PRESETS.forEach((pr) => row.append(el("button", { className: "pill-btn", textContent: pr.name, title: pr.desc, onclick: () => applyPreset(pr) })));
+    pre.append(row); banners.append(pre);
+  }
+
+  renderMouse(p);
+  renderList(p);
+
+  // speeds
+  const sp = $("speeds"); sp.innerHTML = "";
+  p.dpis.forEach((v, i) => {
+    const sel = el("select", { "aria-label": `Speed ${i + 1}` });
+    if (!v) sel.add(new Option("—", 0, true, true));
+    for (let x = meta.dpi.min; x <= meta.dpi.max; x += meta.dpi.step) sel.add(new Option(x, x, false, x === v));
+    sel.onchange = () => { p.dpis[i] = +sel.value; render(); };
+    const star = el("button", { className: "star", textContent: p.default_dpi === i ? "★ start" : "☆", title: "Start at this speed",
+      onclick: () => { p.default_dpi = i; render(); } });
+    sp.append(el("div", { className: "speed" + (p.default_dpi === i ? " def" : "") }, el("div", { className: "lvl", textContent: `Speed ${i + 1}` }), sel, star));
+  });
+  const rates = $("rates"); rates.innerHTML = "";
+  meta.rates.forEach((hz) => rates.append(el("button", { className: "tile" + (hz === p.rate ? " sel" : ""), textContent: hz + " Hz",
+    onclick: () => { p.rate = hz; render(); } })));
+
+  // colours
+  const cs = $("colors"); cs.innerHTML = "";
+  meta.colors.forEach((c) => cs.append(el("button", { className: "sw" + (c === p.color ? " sel" : ""), title: COLOR_NAMES[c],
+    style: `background:${COLOR_CSS[c]}`, "aria-label": COLOR_NAMES[c], onclick: () => { p.color = c; render(); } })));
+
+  // save bar
+  $("bar").hidden = !d.length && !saving;
+  if (!saving) $("bar-msg").textContent = d.length ? `Unsaved changes to Profile ${d.map((i) => i + 1).join(" and ")}` : "";
+}
+
+function renderMouse(p) {
+  const svg = $("mouse");
+  svg.style.setProperty("--led", isBlank(p) ? "#888" : COLOR_CSS[p.color] || "#888");
+  svg.innerHTML = `<path class="body glow" d="M120 16 C 72 16 50 36 48 90 C 46 140 32 200 38 252 C 44 302 82 322 120 322 C 158 322 196 302 202 252 C 208 200 194 140 192 90 C 190 36 168 16 120 16 Z"/>` +
+    SHAPES.map((s, i) => `<g data-i="${i}">${s}</g>`).join("");
+  svg.querySelectorAll("g[data-i]").forEach((g) => {
+    const i = +g.dataset.i;
+    const hot = g.querySelector(".hot");
+    if (picking === i) hot.classList.add("sel");
+    hot.append(Object.assign(document.createElementNS("http://www.w3.org/2000/svg", "title"), { textContent: `${i + 1}. ${BUTTONS[i]}: ${describe(p.buttons[i])}` }));
+    g.addEventListener("click", () => openPicker(i));
+  });
+}
+
+function renderList(p) {
+  const list = $("blist"); list.innerHTML = "";
+  BUTTONS.forEach((b, i) => {
+    const row = el("button", { className: "brow" + (picking === i ? " sel" : ""), id: "row" + i },
+      el("span", { className: "badge", textContent: i + 1 }),
+      el("span", {}, el("span", { className: "what", textContent: describe(p.buttons[i]) }), el("span", { className: "where", textContent: b })),
+      el("span", { className: "chev", textContent: picking === i ? "▴" : "▾" }));
+    row.onclick = () => openPicker(picking === i ? null : i);
+    list.append(row);
+    if (picking === i) list.append(buildPicker(p, i));
+  });
+}
+
+function buildPicker(p, i) {
+  const cur = p.buttons[i];
+  const box = el("div", { className: "picker" }, el("h3", { textContent: `What should button ${i + 1} do?` }));
+  let knownKey = false;
+  for (const g of ACTIONS) {
+    const tiles = el("div", { className: "tiles" });
+    for (const [val, label] of g.items) {
+      if (val === cur) knownKey = true;
+      tiles.append(el("button", { className: "tile" + (val === cur ? " sel" : ""), textContent: label, onclick: () => setButton(i, val) }));
+    }
+    box.append(el("div", { className: "group" }, el("div", { className: "gl", textContent: g.group }), tiles));
+  }
+  // custom shortcut
+  const custom = cur.startsWith("key:") && !knownKey;
+  const cap = el("div", { className: "keycap" + (recording ? " live" : ""), id: "keycap",
+    textContent: recording ? "Press keys now…" : custom && cur !== "key:" ? prettyKey(cur.slice(4)) : "—" });
+  const rec = el("button", { className: "tile" + (custom ? " sel" : ""), textContent: recording ? "Cancel" : "Record a shortcut",
+    onclick: () => (recording ? stopRecording(true) : startRecording(i)) });
+  box.append(el("div", { className: "group" }, el("div", { className: "gl", textContent: "Your own shortcut" }),
+    el("div", { className: "rec" }, rec, cap)));
+  return box;
+}
+
+// ---------------------------------------------------------------- editing
+function openPicker(i) { stopRecording(); picking = i; render(); if (i !== null) $("row" + i).scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+function setButton(i, val) { stopRecording(); edits[current].buttons[i] = val; render(); }
+function applyPreset(pr) {
+  const keep = edits[current].color;
+  edits[current] = clone(pr.p);
+  if (!isBlank(saved[current])) edits[current].color = keep;  // keep the light so profiles stay recognisable
+  picking = null; render();
+  toast(`Loaded "${pr.name}". Press Save to put it on the mouse.`);
+}
+async function useNow() {
+  try { await api("/api/activate", { profile: current }); active = current; render(); toast(`Your mouse is now using Profile ${current + 1}.`); }
+  catch (e) { toast(e.message, true); }
+}
+
+// record a shortcut
+const CODE_NAMES = { Enter: "enter", Escape: "esc", Backspace: "backspace", Tab: "tab", Space: "space", Minus: "minus", Equal: "equal",
+  BracketLeft: "leftbracket", BracketRight: "rightbracket", Backslash: "backslash", Semicolon: "semicolon", Quote: "quote",
+  Backquote: "grave", Comma: "comma", Period: "period", Slash: "slash", CapsLock: "capslock", ArrowUp: "up", ArrowDown: "down",
+  ArrowLeft: "left", ArrowRight: "right", Home: "home", End: "end", PageUp: "pageup", PageDown: "pagedown", Delete: "delete",
+  Insert: "insert", NumpadDivide: "kp_divide", NumpadMultiply: "kp_multiply", NumpadSubtract: "kp_minus", NumpadAdd: "kp_plus",
+  NumpadEnter: "kp_enter", NumpadDecimal: "kp_period" };
+const MOD_CODES = { ControlLeft: "ctrl", ShiftLeft: "shift", AltLeft: "alt", MetaLeft: "cmd",
+  ControlRight: "rctrl", ShiftRight: "rshift", AltRight: "ralt", MetaRight: "rcmd" };
+function codeToKey(code) {
+  if (/^Key[A-Z]$/.test(code)) return code.slice(3).toLowerCase();
+  if (/^Digit\d$/.test(code)) return code.slice(5);
+  if (/^F\d+$/.test(code)) return code.toLowerCase();
+  if (/^Numpad\d$/.test(code)) return "kp_" + code.slice(6);
+  return CODE_NAMES[code];
+}
+let recTarget = null, lastMod = null;
+function mods(e) { return [e.ctrlKey && "ctrl", e.shiftKey && "shift", e.altKey && "alt", e.metaKey && "cmd"].filter(Boolean); }
+function onRecDown(e) {
+  e.preventDefault(); e.stopPropagation();
+  if (MOD_CODES[e.code]) { lastMod = MOD_CODES[e.code]; $("keycap").textContent = prettyKey(mods(e).join("+")) + "…"; return; }
+  lastMod = null;
+  const key = codeToKey(e.code);
+  if (!key) { toast(`"${e.key}" can't be put on a mouse button.`, true); return; }
+  finishRecording([...mods(e), key].join("+"));
+}
+function onRecUp(e) {  // a modifier pressed and released on its own, e.g. just ⌘
+  e.preventDefault();
+  if (lastMod && MOD_CODES[e.code] === lastMod) finishRecording(lastMod);
+}
+function finishRecording(combo) { const i = recTarget; stopRecording(); edits[current].buttons[i] = "key:" + combo; render(); }
+function startRecording(i) {
+  recording = true; recTarget = i; lastMod = null; render();
+  window.addEventListener("keydown", onRecDown, true); window.addEventListener("keyup", onRecUp, true);
+}
+function stopRecording(rerender) {
+  if (!recording) return;
+  recording = false; recTarget = null;
+  window.removeEventListener("keydown", onRecDown, true); window.removeEventListener("keyup", onRecUp, true);
+  if (rerender) render();
+}
+
+// press a real mouse button -> highlight it (uses what's saved on the mouse right now)
+const MOUSE_ACTION = { 0: "left", 1: "middle", 2: "right", 3: "back", 4: "forward" };
+function flash(action) {
+  if (!saved || current !== active) return;
+  saved[active].buttons.forEach((b, i) => {
+    if (b !== action) return;
+    const row = $("row" + i), hot = $("mouse").querySelector(`g[data-i="${i}"] .hot`);
+    [row, hot].forEach((x) => x && x.classList.add("flash"));
+    setTimeout(() => [row, hot].forEach((x) => x && x.classList.remove("flash")), 700);
+  });
+}
+window.addEventListener("mousedown", (e) => { if (!$("app").hidden) flash(MOUSE_ACTION[e.button]); });
+window.addEventListener("mouseup", (e) => { if (e.button === 3 || e.button === 4) e.preventDefault(); });  // don't navigate away
+$("mouse").addEventListener("contextmenu", (e) => e.preventDefault());
+window.addEventListener("keydown", (e) => {
+  if (recording || !saved || e.repeat) return;
+  const key = codeToKey(e.code) || MOD_CODES[e.code];
+  if (key) flash("key:" + [...mods(e).filter((m) => m !== key), key].join("+"));
+});
+
+// ---------------------------------------------------------------- save / menu
+$("save").onclick = async () => {
+  stopRecording();
+  saving = true; $("save").disabled = $("discard").disabled = true;
+  $("bar-msg").textContent = "Saving… the mouse takes a couple of seconds per profile.";
+  try {
+    const r = await api("/api/save", { profiles: edits });
+    const s = await api("/api/state");
+    saved = s.profiles; backupData = s.backup; edits = clone(saved);
+    if (r.not_kept.length) { toast(`The mouse didn't keep every change on Profile ${r.not_kept.join(", ")}. Showing what it has now.`, true); }
+    else toast("Saved to the mouse ✓");
+  } catch (e) { toast(e.message, true); }
+  saving = false; $("save").disabled = $("discard").disabled = false;
+  render();
+};
+$("discard").onclick = () => { stopRecording(); edits = clone(saved); picking = null; render(); };
+$("retry").onclick = () => load(true).catch((e) => toast(e.message, true));
+const nativeApp = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.app;
+if (nativeApp) {
+  ["open-settings", "relaunch", "settings-hint"].forEach((id) => ($(id).hidden = false));
+  $("open-settings").onclick = () => nativeApp.postMessage("openSettings");
+  $("relaunch").onclick = () => nativeApp.postMessage("relaunch");
+}
+$("m-reconnect").onclick = () => { $("menu").open = false; load(true).catch((e) => toast(e.message, true)); };
+$("m-backup").onclick = () => {
+  $("menu").open = false;
+  const native = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.saveFile;
+  if (native) return native.postMessage({ name: "g300s-backup.json", text: JSON.stringify(backupData, null, 2) });  // Mac app shows a Save dialog
+  const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: "application/json" });
+  const a = el("a", { href: URL.createObjectURL(blob), download: "g300s-backup.json" });
+  document.body.append(a); a.click(); a.remove();
+  toast("Backup downloaded.");
+};
+$("m-restore").onclick = () => { $("menu").open = false; $("restore-file").click(); };
+$("restore-file").onchange = async (e) => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f) return;
+  try { edits = (await api("/api/decode", JSON.parse(await f.text()))).profiles; render(); toast(`Loaded ${f.name}. Press Save to put it on the mouse.`); }
+  catch (err) { toast("Couldn't read that backup: " + err.message, true); }
+};
+document.addEventListener("click", (e) => { if (!$("menu").contains(e.target)) $("menu").open = false; });
+window.addEventListener("beforeunload", (e) => { if (edits && dirty().length) { e.preventDefault(); e.returnValue = ""; } });
+
+(async () => {
+  try { meta = await api("/api/meta"); await load(false); }
+  catch (e) { $("status").textContent = "App stopped"; toast("Lost contact with the app. Is it still running?", true); }
+})();
+</script>
+</body>
+</html>
