@@ -22,7 +22,7 @@ It comes in two forms:
 Swift compiler). If you don't have them, run `xcode-select --install`.
 
 ```bash
-git clone https://github.com/<your-username>/g300s-configurator.git
+git clone https://github.com/civelasco/g300s-configurator.git
 cd g300s-configurator
 macos/build.sh
 ```
